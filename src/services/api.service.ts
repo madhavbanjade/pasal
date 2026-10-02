@@ -1,4 +1,5 @@
 import { APIResponse } from "../types";
+import localProducts from "../data/products.json";
 
 const API_BASE =
  "https://fakestoreapi.com";
@@ -14,6 +15,28 @@ const RETRY_BASE_DELAY_MS = 400;
 const DEFAULT_REVALIDATE_SECONDS = 60 * 60; // 1 hour; this catalog never changes
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// fakestoreapi's catalog is static demo data that never changes, and
+// production deploys keep getting 403'd by its anti-abuse protection (shared
+// hosting-platform IPs get rate-limited/blocked). `products.json` is a local
+// snapshot of GET /products, so product reads never depend on the upstream
+// being reachable at all; it's only hit live as a last-resort fallback.
+const getLocalProductsResponse = (
+  endPoint: string,
+): typeof localProducts | (typeof localProducts)[number] | null | undefined => {
+  const parts = endPoint.split("/").filter(Boolean);
+  if (parts[0] !== "products") return undefined;
+
+  if (parts.length === 1) return localProducts;
+
+  if (parts[1] === "category" && parts[2]) {
+    const category = decodeURIComponent(parts[2]);
+    return localProducts.filter((p) => p.category === category);
+  }
+
+  const id = parts[1];
+  return localProducts.find((p) => String(p.id) === id) ?? null;
+};
 
 //Defines the options you can pass to the fetchAPI.
 interface FetchAPIOptions<T = unknown> {
@@ -111,6 +134,13 @@ export const fetchAPI = async <TResponse = any, TData = unknown>({
   if (slug) urlParts.push(slug);
   else if (id) urlParts.push(String(id));
   const url = urlParts.join("/");
+
+  if (method === "GET") {
+    const local = getLocalProductsResponse(urlParts.slice(1).join("/"));
+    if (local !== undefined) {
+      return { success: true, data: local as TResponse, error: null };
+    }
+  }
 
   //Checks if data contains files. If yes, it converts to FormData.
 //If no files, sets Content-Type to application/json.

@@ -12,7 +12,7 @@ export type APIResponse<T = unknown> =
       error: string;
     };
 
-export interface Product {
+export interface ProductCardUi {
   id: number;
   title: string;
   price: number;
@@ -21,6 +21,9 @@ export interface Product {
   image: string;
   rating: number;
 }
+
+
+
 
 
 export type CategoryCardProps = {

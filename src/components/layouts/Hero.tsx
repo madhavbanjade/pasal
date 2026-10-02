@@ -1,4 +1,4 @@
-import { Product } from "@/src/types";
+import { ProductCardUi } from "@/src/types";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -10,7 +10,7 @@ const DELAY = [
   "[animation-delay:240ms]",
 ];
 
-export default function Hero({products}: {products: Product[] }) {
+export default function Hero({products}: {products: ProductCardUi[] }) {
   return (
     <div className="md:flex gap-10 mt-8 max-md:space-y-8 md:items-center md:gap-8 lg:gap-10">
       <div className="flex flex-col  gap-6 w-full md:w-[42%] md:shrink-0 lg:w-[40%] max-sm:gap-4">

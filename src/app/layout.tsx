@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Public_Sans } from "next/font/google";
 import "./globals.css";
-import Header from "../components/layouts/Header";
-import Footer from "../components/layouts/Footer";
+import Header from "@/src/components/layouts/Header";
+import Footer from "@/src/components/layouts/Footer";
+
 
 
 const publicSans = Public_Sans({

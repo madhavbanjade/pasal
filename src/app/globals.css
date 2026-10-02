@@ -1,5 +1,8 @@
 @import "tailwindcss";
-@import "../components/styles/theme.css"
+
+@layer base {
+  @import "../components/styles/theme.css";
+}
 
 
 

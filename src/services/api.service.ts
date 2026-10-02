@@ -121,7 +121,7 @@ console.log(url)
     const response = await fetch(url, {
       method,
       headers,
-      credentials: "include", //(sends cookies)
+      // credentials: "include", //(sends cookies)
       body: //(JSON or FormData)
         method !== "GET" && finalData
           ? finalData instanceof FormData

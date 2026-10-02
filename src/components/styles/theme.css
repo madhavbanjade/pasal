@@ -5,7 +5,7 @@
   --color-primary: #2f4a66; /* buttons, links, focus */
   --color-secondary: #232323; /* headings, selected chips */
   --color-bg: #ffffff;
-  --color-tile: #f1f1ee; /* product photo background */
+  --color-tile: #8a1515; /* product photo background */
   --color-text: #232323;
   --color-text-muted: #676764;
   --color-border: #dcdcd7;
@@ -200,6 +200,18 @@ textarea {
   }
 }
 
+@media (max-width: 400px) {
+  .header .container {
+    gap: var(--space-sm);
+  }
+  .header .btn,
+  .header .btn--secondary {
+    padding: 0 14px;
+    min-height: 38px;
+    font-size: var(--text-small);
+  }
+}
+
 /* ---------- Footer ---------- */
 .footer {
   border-top: 1px solid var(--color-border);
@@ -380,8 +392,13 @@ textarea.input {
 .card {
   display: flex;
   flex-direction: column;
+  height: 100%;
   color: var(--color-text);
   text-decoration: none;
+  transition: transform 300ms ease;
+}
+.card:hover {
+    transform: scale(1.05);
 }
 .card__image {
   aspect-ratio: 1 / 1;
@@ -389,16 +406,18 @@ textarea.input {
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: var(--color-tile);
+  background-color: var(--color-title);
   border-radius: var(--radius);
+   transition: transform 300ms ease;
 }
 .card__image img {
-  width: 66%;
-  height: 72%;
+  width: 80%;
+  height: 65%;
   object-fit: contain;
   mix-blend-mode: multiply;
 }
 .card:hover .card__image {
+   transform: scale(1.05);
   background: #e7e7e3;
 }
 .card__category {

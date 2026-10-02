@@ -3,7 +3,7 @@
 export default function Footer(){
     return(
         <div className="footer">
-            <div className="container flex justify-between">
+            <div className="container">
                 <div className="">
   <h4>Pasal</h4>
                 <p>Designed and built by Madhav Banjade as a Recrutment Project. No real orders are raken.</p>

@@ -2,16 +2,12 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
-import { CATEGORIES } from "@/src/lib/categories"
-
-const CHIP_CATEGORIES = [{ label: "All", value: "" }, ...CATEGORIES]
 
 export default function ProductFilters({ title, count }: { title: string; count: number }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const activeCategory = searchParams.get("category") ?? ""
   const sort = searchParams.get("sort") ?? "featured"
   const q = searchParams.get("q") ?? ""
 
@@ -47,23 +43,6 @@ export default function ProductFilters({ title, count }: { title: string; count:
         <div className="flex items-baseline gap-2">
           <h2 className="text-2xl font-semibold tracking-[-0.02em]">{title}</h2>
           <span className="text-sm text-[#676764]">{count} products</span>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          {CHIP_CATEGORIES.map((category) => (
-            <button
-              key={category.label}
-              type="button"
-              onClick={() => updateParams({ category: category.value })}
-              className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                activeCategory === category.value
-                  ? "border-[#232323] bg-[#232323] text-[#ffffff]"
-                  : "border-[#dcdcd7] text-[#676764] hover:border-[#232323] hover:text-[#232323]"
-              }`}
-            >
-              {category.label}
-            </button>
-          ))}
         </div>
       </div>
 

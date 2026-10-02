@@ -3,6 +3,7 @@ import ProductInfo from "@/src/components/products/ProductInfo";
 import RelatedProducts from "@/src/components/products/RelatedProducts";
 import { fetchAPI } from "@/src/services/api.service";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { ProductCardUi } from "@/src/types";
 import type { Metadata } from "next";
 import { SITE_URL } from "@/src/lib/seo";
@@ -71,6 +72,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
   return (
     <div className="container px-4 pt-6 pb-24 sm:px-6 md:pb-16 lg:pt-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <Link href="/" className="mb-4 inline-block text-sm text-[#676764] hover:text-[#232323]">&larr; Back to Home</Link>
 
       <div className="grid gap-8 md:grid-cols-2 md:gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
         {/* gallery stays in view while the details scroll on larger screens */}

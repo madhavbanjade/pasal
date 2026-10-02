@@ -5,7 +5,7 @@ import { fetchAPI } from "../services/api.service";
 import { ProductCardUi } from "../types";
 import { Suspense } from "react";
 import Link from "next/link";
-import { CATEGORY_LABELS } from "../lib/categories";
+import { CATEGORIES, CATEGORY_LABELS } from "../lib/categories";
 import { filterAndSortProducts } from "../lib/products";
 import type { Metadata } from "next";
 
@@ -42,7 +42,9 @@ export default async function Home({ searchParams }: HomeProps) {
   const categoryError = categoryRes && !categoryRes.success ? categoryRes.error : null;
   const error = productsError ?? categoryError;
 
-  const product = all.slice(0, 4);
+  const product = CATEGORIES
+    .map((category) => all.find((p) => p.category === category.value))
+    .filter((p): p is ProductCardUi => Boolean(p));
 
   const categoryProducts: ProductCardUi[] = category ? (categoryRes?.success ? categoryRes.data : []) : all;
   const displayProducts = filterAndSortProducts(categoryProducts, { q, sort });

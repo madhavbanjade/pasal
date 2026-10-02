@@ -5,6 +5,7 @@ import { fetchAPI } from "@/src/services/api.service";
 import { notFound } from "next/navigation";
 import type { ProductCardUi } from "@/src/types";
 import type { Metadata } from "next";
+import { SITE_URL } from "@/src/lib/seo";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -52,7 +53,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
-    image: product.image,
+    image: `${SITE_URL}${product.image}`,
     description: product.description,
     sku: String(product.id),
     offers: {

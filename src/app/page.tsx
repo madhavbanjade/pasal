@@ -1,25 +1,28 @@
-import Categories from "../components/layouts/Categories";
 import Hero from "../components/layouts/Hero";
 import ProductCard from "../components/layouts/ProductCard";
 import ProductFilters from "../components/products/ProductFilters";
 import { fetchAPI } from "../services/api.service";
-import { Product } from "../types";
+import { ProductCardUi } from "../types";
 import { Suspense } from "react";
 import Link from "next/link";
 import { CATEGORY_LABELS } from "../lib/categories";
+import { filterAndSortProducts } from "../lib/products";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Shop clothing, jewellery and electronics | Mero Pasal",
+  description: "Everyday clothes for men and women, a little jewellery, and the drives and monitors that keep your desk running.",
+};
 
 const HOME_PRODUCTS_LIMIT = 8;
 
 
 
 const PICKS = [16, 14, 2, 7];
-async function fetchProducts(): Promise<Product[]>{
-  const res = await fetchAPI({ endPoint: "products"});
-  const data =  res?.data ?? [];
- console.log(data);
- return data;
-
-
+async function fetchProducts(): Promise<{ products: ProductCardUi[]; error: string | null }> {
+  const res = await fetchAPI<ProductCardUi[]>({ endPoint: "products" });
+  if (!res.success) return { products: [], error: res.error };
+  return { products: res.data, error: null };
 }
 
 interface HomeProps {
@@ -32,21 +35,20 @@ export default async function Home({ searchParams }: HomeProps) {
   const q = Array.isArray(search.q) ? search.q[0] : search.q;
   const sort = Array.isArray(search.sort) ? search.sort[0] : search.sort;
 
-  const all = await fetchProducts();
-   const product = PICKS.map((id) => all.find((p) => p.id === id)).filter(
-    (p): p is Product => Boolean(p)
+  const [{ products: all, error: productsError }, categoryRes] = await Promise.all([
+    fetchProducts(),
+    category ? fetchAPI<ProductCardUi[]>({ endPoint: `products/category/${category}` }) : Promise.resolve(null),
+  ]);
+
+  const categoryError = categoryRes && !categoryRes.success ? categoryRes.error : null;
+  const error = productsError ?? categoryError;
+
+  const product = PICKS.map((id) => all.find((p) => p.id === id)).filter(
+    (p): p is ProductCardUi => Boolean(p)
   );
 
-  const categoryRes = category ? await fetchAPI({ endPoint: `products/category/${category}` }) : null;
-  let displayProducts: any[] = category ? (categoryRes?.data ?? []) : all;
-
-  if (q) {
-    displayProducts = displayProducts.filter((p: any) => p.title.toLowerCase().includes(q.toLowerCase()));
-  }
-
-  if (sort === "price-asc") displayProducts = [...displayProducts].sort((a: any, b: any) => a.price - b.price);
-  else if (sort === "price-desc") displayProducts = [...displayProducts].sort((a: any, b: any) => b.price - a.price);
-  else if (sort === "rating") displayProducts = [...displayProducts].sort((a: any, b: any) => b.rating.rate - a.rating.rate);
+  const categoryProducts: ProductCardUi[] = category ? (categoryRes?.success ? categoryRes.data : []) : all;
+  const displayProducts = filterAndSortProducts(categoryProducts, { q, sort });
 
   const visibleProducts = displayProducts.slice(0, HOME_PRODUCTS_LIMIT);
 
@@ -64,14 +66,16 @@ return(
      />
    </Suspense>
 
+   {error && <p className="field__error mb-4">{error}</p>}
+
    <div className="product-grid">
-   {visibleProducts.map((product: any) => (
+   {visibleProducts.map((product) => (
         <ProductCard key={product.id} product={product}  />
       ))}
    </div>
 
-   <div className="flex justify-end mt-2 mb-4">
-     <Link href="/products" className="btn--secondary">View all products</Link>
+   <div className="flex justify-center mt-8 mb-4">
+     <Link href="/products" className="border border-gray-200 hover:border hover:border-black p-2 rounded-lg">View all products</Link>
    </div>
 
   </div>

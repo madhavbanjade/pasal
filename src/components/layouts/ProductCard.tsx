@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import AddToCartButton from "./AddToCartButton";
 import { ProductCardUi } from "@/src/types";
 
@@ -12,7 +13,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <Link key={product.id} href={`/products/${product.id}`} className="">
             <div className="card border border-gray-100 p-2 rounded-lg mb-4 ">
               <div className="card__image">
-                <img src={product.image} alt="card" />
+                <Image src={product.image} alt={product.title} width={300} height={300} />
               </div>
               <div className="card__category">{product.category}</div>
               <h5 className="card__title">
@@ -23,7 +24,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               </span>
               <div className="card__footer">
                 <span className="card__price">{product.price}</span>
-                <AddToCartButton />
+                <AddToCartButton product={product} />
               </div>
             </div>
         </Link>

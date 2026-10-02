@@ -21,7 +21,7 @@ export default function ProductInfo({ product }: { product: ProductCardUi }) {
 
       <div className="flex items-stretch gap-3">
         <QuantityAdd />
-        <AddToCartButton className="flex-1" label="Add to bag" />
+        <AddToCartButton className="flex-1" label="Add to bag" product={product} />
       </div>
 
       <ul className="grid gap-2 text-sm text-[#676764] sm:grid-cols-3 sm:gap-3">

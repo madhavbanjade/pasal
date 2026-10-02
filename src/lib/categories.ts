@@ -1,4 +1,3 @@
-// fakestoreapi spells it "jewelery" but we show "Jewellery" in the UI
 export const CATEGORIES = [
   { label: "Men's clothing", value: "men's clothing" },
   { label: "Women's clothing", value: "women's clothing" },

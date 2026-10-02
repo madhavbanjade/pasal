@@ -42,7 +42,7 @@ export default function ProductFilters({ title, count }: { title: string; count:
   }, [query])
 
   return (
-    <div className=" flex flex-wrap items-start justify-between gap-6">
+    <div className=" flex flex-wrap items-start justify-between gap-6 mt-4">
       <div>
         <div className="flex items-baseline gap-2">
           <h2 className="text-2xl font-semibold tracking-[-0.02em]">{title}</h2>

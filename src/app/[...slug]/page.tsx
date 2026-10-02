@@ -1,24 +1,34 @@
 import ProductCard from "@/src/components/layouts/ProductCard";
 import ProductFilters from "@/src/components/products/ProductFilters";
+import Pagination from "@/src/components/products/Pagination";
 import { fetchAPI } from "@/src/services/api.service";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, ViewTransition } from "react";
 import { CATEGORY_LABELS } from "@/src/lib/categories";
+import { filterAndSortProducts } from "@/src/lib/products";
+import type { ProductCardUi } from "@/src/types";
+import type { Metadata } from "next";
 
-const pageMap: Record<
-  string,
-  {
-    endpoint: string;
-    title: string;
-    Component: React.ComponentType<any> | null;
-  }
-> = {
-  products: { endpoint: "products", title: "Everything", Component: null },
+const PAGE_SIZE = 8;
+
+const pageMap: Record<string, { endpoint: string; title: string }> = {
+  products: { endpoint: "products", title: "Everything" },
 };
 
 interface PageProps {
   params: Promise<{ slug: string[] }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const search = await searchParams;
+  const category = Array.isArray(search.category) ? search.category[0] : search.category;
+  const title = category ? CATEGORY_LABELS[category] ?? category : "All products";
+
+  return {
+    title,
+    description: `Browse ${title.toLowerCase()} at Mero Pasal.`,
+  };
 }
 
 export default async function SlugPage({ params, searchParams }: PageProps) {
@@ -36,28 +46,16 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
   const q = Array.isArray(search.q) ? search.q[0] : search.q;
   const sort = Array.isArray(search.sort) ? search.sort[0] : search.sort;
 
-  const [basePath, baseQuery] = page.endpoint.split("?");
+  const [basePath] = page.endpoint.split("?");
   const endpointBase = category ? `products/category/${category}` : basePath;
 
-  const queryParams = new URLSearchParams(baseQuery ?? "");
+  const res = await fetchAPI<ProductCardUi[]>({ endPoint: endpointBase });
+  const error = res.success ? null : res.error;
+  const products = filterAndSortProducts(res.success ? res.data : [], { q, sort });
 
-  queryParams.set("limit", "");
-  queryParams.set("page", String(currentPage));
-
-  const endpoint = queryParams.toString()
-    ? `${endpointBase}?${queryParams.toString()}`
-    : endpointBase;
-
-  const res = await fetchAPI({ endPoint: endpoint });
-  let products = res?.data ?? [];
-
-  if (q) {
-    products = products.filter((p: any) => p.title.toLowerCase().includes(q.toLowerCase()));
-  }
-
-  if (sort === "price-asc") products = [...products].sort((a: any, b: any) => a.price - b.price);
-  else if (sort === "price-desc") products = [...products].sort((a: any, b: any) => b.price - a.price);
-  else if (sort === "rating") products = [...products].sort((a: any, b: any) => b.rating.rate - a.rating.rate);
+  const totalPages = Math.max(1, Math.ceil(products.length / PAGE_SIZE));
+  const page_ = Math.min(currentPage, totalPages);
+  const pagedProducts = products.slice((page_ - 1) * PAGE_SIZE, page_ * PAGE_SIZE);
 
   return (
     <div className="space-y-4 container" id="products">
@@ -69,18 +67,28 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         />
       </Suspense>
 
- <div className="product-grid">
-     {products.length > 0 ? (
+      {error && <p className="field__error">{error}</p>}
+
+      <ViewTransition key={`${category ?? ""}-${q ?? ""}-${sort ?? ""}-${page_}`} name="product-grid" share="auto" enter="auto" default="none">
+        <div className="product-grid">
+          {pagedProducts.length > 0 ? (
             <>
-{products.map((product: any) => (
-    <ProductCard key={product.id} product={product} />
-))}
+              {pagedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
             </>
-        ):(
-<p className="text-center text-gray-500">No products found</p>
-        )
-      }
- </div>
+          ) : (
+            <p className="text-center text-gray-500">No products found</p>
+          )}
+        </div>
+      </ViewTransition>
+
+      <Pagination
+        basePath={`/${pageKey}`}
+        currentPage={page_}
+        totalPages={totalPages}
+        searchParams={{ category, q, sort }}
+      />
 
     </div>
   );

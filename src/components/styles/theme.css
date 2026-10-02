@@ -271,10 +271,19 @@ textarea {
   cursor: pointer;
   transition:
     filter 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s,
     border-color 0.15s;
 }
 .btn:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.2);
+  box-shadow: 0 4px 12px rgba(47, 74, 102, 0.35);
+  transform: translateY(-1px);
+}
+.btn:active {
+  filter: brightness(0.95);
+  box-shadow: none;
+  transform: translateY(0);
 }
 .btn:disabled {
   opacity: 0.45;
@@ -297,11 +306,19 @@ textarea {
   cursor: pointer;
   transition:
     filter 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s,
     border-color 0.15s;
 }
 .btn--secondary:hover {
-  filter: none;
-  border-color: var(--color-text);
+  filter: brightness(1.1);
+  box-shadow: 0 4px 12px rgba(191, 60, 45, 0.35);
+  transform: translateY(-1px);
+}
+.btn--secondary:active {
+  filter: brightness(0.95);
+  box-shadow: none;
+  transform: translateY(0);
 }
 .btn--small {
   min-height: 34px;
@@ -466,10 +483,262 @@ textarea.input {
   }
 }
 
+/* ---------- Cart ---------- */
+.cart-btn {
+  position: relative;
+  gap: 8px;
+}
+.cart-btn__icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  filter: brightness(0) invert(1); /* white icon on the dark button */
+}
+.cart-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--color-login);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  line-height: 1;
+}
+
+.cart-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease;
+  z-index: 40;
+}
+.cart-overlay--open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.cart-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  max-width: 92vw;
+  background: var(--color-bg);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+.cart-drawer--open {
+  transform: translateX(0);
+}
+.cart-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+.cart-drawer__close {
+  border: none;
+  background: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+.cart-drawer__close:hover {
+  color: var(--color-text);
+}
+.cart-drawer__empty {
+  padding: var(--space-lg);
+  color: var(--color-text-muted);
+}
+.cart-drawer__items {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md) var(--space-lg);
+}
+.cart-drawer__footer {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  font-weight: var(--weight-semibold);
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.cart-item:last-child {
+  border-bottom: none;
+}
+.cart-item__image {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.cart-item__image img {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+.cart-item__info {
+  flex: 1;
+  min-width: 0;
+}
+.cart-item__title {
+  margin: 0 0 4px;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cart-item__qty {
+  font-size: var(--text-tiny);
+  color: var(--color-text-muted);
+}
+.cart-item__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.cart-item__price {
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+}
+.cart-item__remove {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: var(--text-tiny);
+  color: var(--color-error);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .cart-drawer {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}
+
+.toast {
+  position: fixed;
+  bottom: var(--space-xl);
+  right: var(--space-xl);
+  z-index: 60;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  background: var(--color-secondary);
+  color: #ffffff;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: toast-in 0.25s ease;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 480px) {
+  .toast {
+    left: var(--space-md);
+    right: var(--space-md);
+    bottom: var(--space-lg);
+    text-align: center;
+  }
+}
+
+/* ---------- Pagination ---------- */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding-block: var(--space-xl);
+  flex-wrap: wrap;
+}
+.pagination__pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pagination__btn,
+.pagination__page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font-size: var(--text-small);
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.pagination__page {
+  padding: 0;
+  width: 38px;
+}
+.pagination__btn:hover,
+.pagination__page:hover {
+  border-color: var(--color-secondary);
+}
+.pagination__page--active {
+  background: var(--color-secondary);
+  border-color: var(--color-secondary);
+  color: #ffffff;
+}
+.pagination__btn--disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
     animation: none !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

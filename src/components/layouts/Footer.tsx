@@ -6,7 +6,7 @@ export default function Footer(){
             <div className="container">
                 <div className="">
   <h4>Pasal</h4>
-                <p>Designed and built by Madhav Banjade as a Recrutment Project. No real orders are raken.</p>
+                <p>Designed and built by Madhav Banjade as a Recruitment Project. No real orders are raken.</p>
                 </div>
 
                 <div className="">

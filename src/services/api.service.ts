@@ -92,21 +92,20 @@ const toFormData = (
 
 
 export const fetchAPI = async <TResponse = any, TData = unknown>({
-  endPoint = "", method = "GET", data, id, slug, setError, headers: customHeaders = {},
+  endPoint = "", method = "GET", data, id, slug, setError, headers: customHeaders = {}, revalidateSeconds,
 }: FetchAPIOptions<TData>): Promise<APIResponse<TResponse>> => {
     //Combines API_BASE + endpoint + id/slug to form the request URL.
   const urlParts = [API_BASE, endPoint];
   if (slug) urlParts.push(slug);
   else if (id) urlParts.push(String(id));
   const url = urlParts.join("/");
-console.log(endPoint)
+
   //Checks if data contains files. If yes, it converts to FormData.
 //If no files, sets Content-Type to application/json.
   const headers: Record<string, string> = { ...customHeaders };
 
   let finalData: any = data;
-console.log("API Request Data:", data);
-  
+
   if (data && !(data instanceof FormData)) {
     if (hasFiles(data)) {
       finalData = toFormData(data);
@@ -114,7 +113,13 @@ console.log("API Request Data:", data);
       headers["Content-Type"] = "application/json";
     }
   }
-console.log(url)
+
+  // GETs are cached and revalidated in the background so pages don't block
+  // on fakestoreapi for every single request. Writes always go through fresh.
+  const cacheOptions =
+    method === "GET"
+      ? { next: { revalidate: revalidateSeconds ?? 60 } }
+      : { cache: "no-store" as const };
 
   //send fetch request with following fileds
   try {
@@ -128,7 +133,7 @@ console.log(url)
             ? finalData
             : JSON.stringify(finalData)
           : undefined,
-      cache: "no-store", //(always fresh data)
+      ...cacheOptions,
     });
 
 
@@ -150,10 +155,13 @@ console.log(url)
     }
 
    // If everything is fine, returns the JSON wrapped in APIResponse
-    const json = await response.json();
+    // fakestoreapi returns a 200 with an empty body for ids that don't exist,
+    // so an empty response is a valid "no data" result, not a parse failure.
+    const text = await response.text();
+    const json = text ? JSON.parse(text) : null;
     return { success: true, data: json, error: null };
     //Catch Network Errors
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorMessage =
       error instanceof Error
         ? error.message

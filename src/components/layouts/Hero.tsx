@@ -22,8 +22,8 @@ export default function Hero({products}: {products: ProductCardUi[] }) {
           drives and monitors <br className="hidden lg:inline" /> that keep your desk running.
         </p>
         <div className="flex gap-8 flex-wrap max-sm:gap-3">
-          <button className="btn max-sm:flex-1">Shop Now</button>
-          <button className="btn--secondary max-sm:flex-1">See Best Rated</button>
+          <Link href="/products" className="btn max-sm:flex-1">Shop Now</Link>
+          <Link href="/products?sort=rating" className="btn--secondary max-sm:flex-1">See Best Rated</Link>
         </div>
 
         <p>
@@ -41,22 +41,22 @@ export default function Hero({products}: {products: ProductCardUi[] }) {
 
    <Link
    key={p.id}
-   href={`/product/${p.id}`}
+   href={`/products/${p.id}`}
    aria-label={`${p.title}, ${(p.price)}`}
-          className={`relative flex min-h-0 flex-col overflow-hidden rounded bg-tile
+          className={`group relative flex min-h-0 flex-col overflow-hidden rounded bg-tile
                       px-2.5 pt-2.5 pb-2 text-[#232323] transition-colors hover:bg-tile-hover
                       focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-primary
                       sm:px-4 sm:pt-4 sm:pb-3
                       animate-rise motion-reduce:animate-none motion-reduce:transition-none max-sm:aspect-[4/3] ${SLOT[i]} ${DELAY[i]}`}
         >
-          <span className="relative mx-[8%] my-[4%] min-h-0 flex-1">
+          <span className="relative mx-[8%] my-[4%] min-h-0 flex-1 overflow-hidden">
             <Image
               src={p.image}
               alt=""
               fill
               priority={i == 0}
               sizes="(max-width: 600px) 50vw, (max-width: 1024px) 45vw, 30vw"
-              className="object-contain mix-blend-multiply"
+              className="object-contain mix-blend-multiply transition-transform duration-300 ease-out group-hover:scale-110"
             />
           </span>
 

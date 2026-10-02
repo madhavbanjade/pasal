@@ -2,6 +2,7 @@ import { APIResponse } from "../types";
 
 const API_BASE =
  "https://fakestoreapi.com";
+const PRODUCT_LOAD_ERROR = "We couldn’t load the products right now. Please try again in a moment.";
 
 //Defines the options you can pass to the fetchAPI.
 interface FetchAPIOptions<T = unknown> {
@@ -146,39 +147,23 @@ export const fetchAPI = async <TResponse = any, TData = unknown>({
       } catch {
         // Some upstreams return an HTML challenge page with HTTP 200. Never
         // surface that page (or its markup) as an error in the storefront.
-        const errorMessage = response.ok
-          ? "The product service returned an invalid response. Please try again later."
-          : `The product service is unavailable (HTTP ${response.status}). Please try again later.`;
-        if (setError) setError(errorMessage);
-        return { success: false, error: errorMessage, data: null };
+        if (setError) setError(PRODUCT_LOAD_ERROR);
+        return { success: false, error: PRODUCT_LOAD_ERROR, data: null };
       }
     }
 
     if (!response.ok) {
-      const apiError =
-        json && typeof json === "object"
-          ? (json as { message?: unknown; error?: unknown }).message ??
-            (json as { error?: unknown }).error
-          : undefined;
-      const errorMessage =
-        typeof apiError === "string" && apiError.trim()
-          ? apiError
-          : `The product service is unavailable (HTTP ${response.status}). Please try again later.`;
-      if (setError) setError(errorMessage);
-      return { success: false, error: errorMessage, data: null };
+      if (setError) setError(PRODUCT_LOAD_ERROR);
+      return { success: false, error: PRODUCT_LOAD_ERROR, data: null };
     }
 
     // Treat an empty successful response as null, as some endpoints return an
     // empty body for a missing item.
     return { success: true, data: json as TResponse, error: null };
     //Catch Network Errors
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "Failed to connect to the server.";
-    if (setError) setError(errorMessage);
-    return { success: false, error: errorMessage, data: null };
+  } catch {
+    if (setError) setError(PRODUCT_LOAD_ERROR);
+    return { success: false, error: PRODUCT_LOAD_ERROR, data: null };
   }
 };
 

@@ -1,7 +1,50 @@
 import { APIResponse } from "../types";
+  // Cache product reads and refresh periodically; writes always use fresh data.
+const API_BASE = "https://dummyjson.com";
 
-const API_BASE =
- "https://fakestoreapi.com";
+const CATEGORY_SOURCE_SLUGS: Record<string, string[]> = {
+  "men's clothing": ["mens-shirts", "mens-shoes", "mens-watches"],
+  "women's clothing": ["tops", "womens-dresses", "womens-shoes", "womens-watches", "womens-bags"],
+  jewelery: ["womens-jewellery"],
+  electronics: ["laptops", "smartphones", "tablets", "mobile-accessories"],
+};
+
+const SOURCE_CATEGORY = Object.fromEntries(
+  Object.entries(CATEGORY_SOURCE_SLUGS).flatMap(([category, slugs]) =>
+    slugs.map((slug) => [slug, category]),
+  ),
+);
+
+interface DummyProduct {
+  id: number;
+  title: string;
+  price: number;
+  description: string;
+  category: string;
+  rating?: number | { rate: number; count: number };
+  reviews?: unknown[];
+  images?: string[];
+  thumbnail?: string;
+}
+
+function normalizeProduct(product: DummyProduct) {
+  const category = SOURCE_CATEGORY[product.category];
+  if (!category) return null;
+
+  const rating = typeof product.rating === "number"
+    ? { rate: product.rating, count: product.reviews?.length ?? 0 }
+    : product.rating ?? { rate: 0, count: 0 };
+
+  return {
+    id: product.id,
+    title: product.title,
+    price: product.price,
+    description: product.description,
+    category,
+    image: product.thumbnail ?? product.images?.[0] ?? "",
+    rating,
+  };
+}
 
 //Defines the options you can pass to the fetchAPI.
 interface FetchAPIOptions<T = unknown> {
@@ -95,10 +138,12 @@ export const fetchAPI = async <TResponse = any, TData = unknown>({
   endPoint = "", method = "GET", data, id, slug, setError, headers: customHeaders = {}, revalidateSeconds,
 }: FetchAPIOptions<TData>): Promise<APIResponse<TResponse>> => {
     //Combines API_BASE + endpoint + id/slug to form the request URL.
-  const urlParts = [API_BASE, endPoint];
-  if (slug) urlParts.push(slug);
-  else if (id) urlParts.push(String(id));
-  const url = urlParts.join("/");
+  const resolvedEndpoint = [endPoint, slug, id].filter(Boolean).join("/");
+  const categoryMatch = resolvedEndpoint.match(/^products\/category\/(.+)$/);
+  const allProductsRequest = resolvedEndpoint === "products" || Boolean(categoryMatch);
+  const url = allProductsRequest
+    ? `${API_BASE}/products?limit=0`
+    : `${API_BASE}/${resolvedEndpoint}`;
 
   //Checks if data contains files. If yes, it converts to FormData.
 //If no files, sets Content-Type to application/json.
@@ -114,8 +159,7 @@ export const fetchAPI = async <TResponse = any, TData = unknown>({
     }
   }
 
-  // GETs are cached and revalidated in the background so pages don't block
-  // on fakestoreapi for every single request. Writes always go through fresh.
+ 
   const cacheOptions =
     method === "GET"
       ? { next: { revalidate: revalidateSeconds ?? 60 } }
@@ -170,7 +214,17 @@ export const fetchAPI = async <TResponse = any, TData = unknown>({
 
     // Treat an empty successful response as null, as some endpoints return an
     // empty body for a missing item.
-    return { success: true, data: json as TResponse, error: null };
+    let result: unknown = json;
+    if (allProductsRequest && json && typeof json === "object" && "products" in json) {
+      const sourceProducts = (json as { products: DummyProduct[] }).products;
+      const category = categoryMatch ? decodeURIComponent(categoryMatch[1]) : null;
+      result = sourceProducts
+        .map(normalizeProduct)
+        .filter((product) => product && (!category || product.category === category));
+    } else if (json && typeof json === "object" && "id" in json && "category" in json) {
+      result = normalizeProduct(json as unknown as DummyProduct);
+    }
+    return { success: true, data: result as TResponse, error: null };
     //Catch Network Errors
   } catch (error: unknown) {
     const errorMessage =

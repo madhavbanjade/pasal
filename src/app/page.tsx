@@ -18,7 +18,6 @@ const HOME_PRODUCTS_LIMIT = 8;
 
 
 
-const PICKS = [16, 14, 2, 7];
 async function fetchProducts(): Promise<{ products: ProductCardUi[]; error: string | null }> {
   const res = await fetchAPI<ProductCardUi[]>({ endPoint: "products" });
   if (!res.success) return { products: [], error: res.error };
@@ -43,9 +42,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const categoryError = categoryRes && !categoryRes.success ? categoryRes.error : null;
   const error = productsError ?? categoryError;
 
-  const product = PICKS.map((id) => all.find((p) => p.id === id)).filter(
-    (p): p is ProductCardUi => Boolean(p)
-  );
+  const product = all.slice(0, 4);
 
   const categoryProducts: ProductCardUi[] = category ? (categoryRes?.success ? categoryRes.data : []) : all;
   const displayProducts = filterAndSortProducts(categoryProducts, { q, sort });

@@ -4,6 +4,17 @@ const API_BASE =
  "https://fakestoreapi.com";
 const PRODUCT_LOAD_ERROR = "We couldn’t load the products right now. Please try again in a moment.";
 
+// fakestoreapi.com is a shared demo API that rate-limits/blocks by IP. Hosting
+// platforms share outbound IPs across many projects hitting the same API, so
+// GET requests get retried with backoff on 403/429/5xx before giving up, and
+// cached much longer than the data actually changes to cut request volume.
+const RETRYABLE_STATUS = new Set([403, 408, 425, 429, 500, 502, 503, 504]);
+const MAX_RETRIES = 3;
+const RETRY_BASE_DELAY_MS = 400;
+const DEFAULT_REVALIDATE_SECONDS = 60 * 60; // 1 hour; this catalog never changes
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 //Defines the options you can pass to the fetchAPI.
 interface FetchAPIOptions<T = unknown> {
   endPoint: string;
@@ -119,52 +130,66 @@ export const fetchAPI = async <TResponse = any, TData = unknown>({
   // on fakestoreapi for every single request. Writes always go through fresh.
   const cacheOptions =
     method === "GET"
-      ? { next: { revalidate: revalidateSeconds ?? 60 } }
+      ? { next: { revalidate: revalidateSeconds ?? DEFAULT_REVALIDATE_SECONDS } }
       : { cache: "no-store" as const };
 
-  //send fetch request with following fileds
-  try {
-    const response = await fetch(url, {
-      method,
-      headers: { Accept: "application/json", ...headers },
-      credentials: "include", //(sends cookies)
-      body: //(JSON or FormData)
-        method !== "GET" && finalData
-          ? finalData instanceof FormData
-            ? finalData
-            : JSON.stringify(finalData)
-          : undefined,
-      ...cacheOptions,
-    });
+  const body =
+    method !== "GET" && finalData
+      ? finalData instanceof FormData
+        ? finalData
+        : JSON.stringify(finalData)
+      : undefined;
 
+  //send fetch request, retrying with backoff on rate-limit/transient upstream errors
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: { Accept: "application/json", ...headers },
+        body,
+        ...cacheOptions,
+      });
 
-    const text = await response.text();
-    let json: TResponse | null = null;
-
-    if (text.trim()) {
-      try {
-        json = JSON.parse(text) as TResponse;
-      } catch {
-        // Some upstreams return an HTML challenge page with HTTP 200. Never
-        // surface that page (or its markup) as an error in the storefront.
+      if (!response.ok) {
+        if (RETRYABLE_STATUS.has(response.status) && attempt < MAX_RETRIES) {
+          await sleep(RETRY_BASE_DELAY_MS * 2 ** attempt);
+          continue;
+        }
         if (setError) setError(PRODUCT_LOAD_ERROR);
         return { success: false, error: PRODUCT_LOAD_ERROR, data: null };
       }
-    }
 
-    if (!response.ok) {
+      const text = await response.text();
+      let json: TResponse | null = null;
+
+      if (text.trim()) {
+        try {
+          json = JSON.parse(text) as TResponse;
+        } catch {
+          // Some upstreams return an HTML challenge page with HTTP 200. Never
+          // surface that page (or its markup) as an error in the storefront.
+          if (setError) setError(PRODUCT_LOAD_ERROR);
+          return { success: false, error: PRODUCT_LOAD_ERROR, data: null };
+        }
+      }
+
+      // Treat an empty successful response as null, as some endpoints return an
+      // empty body for a missing item.
+      return { success: true, data: json as TResponse, error: null };
+      //Catch Network Errors
+    } catch {
+      if (attempt < MAX_RETRIES) {
+        await sleep(RETRY_BASE_DELAY_MS * 2 ** attempt);
+        continue;
+      }
       if (setError) setError(PRODUCT_LOAD_ERROR);
       return { success: false, error: PRODUCT_LOAD_ERROR, data: null };
     }
-
-    // Treat an empty successful response as null, as some endpoints return an
-    // empty body for a missing item.
-    return { success: true, data: json as TResponse, error: null };
-    //Catch Network Errors
-  } catch {
-    if (setError) setError(PRODUCT_LOAD_ERROR);
-    return { success: false, error: PRODUCT_LOAD_ERROR, data: null };
   }
+
+  // Unreachable, but keeps TypeScript happy about always returning.
+  if (setError) setError(PRODUCT_LOAD_ERROR);
+  return { success: false, error: PRODUCT_LOAD_ERROR, data: null };
 };
 
 export type {APIResponse}

@@ -125,7 +125,7 @@ export const fetchAPI = async <TResponse = any, TData = unknown>({
   try {
     const response = await fetch(url, {
       method,
-      headers,
+      headers: { Accept: "application/json", ...headers },
       // credentials: "include", //(sends cookies)
       body: //(JSON or FormData)
         method !== "GET" && finalData
@@ -137,29 +137,40 @@ export const fetchAPI = async <TResponse = any, TData = unknown>({
     });
 
 
-    //handle errors
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = "Something went wrong.";
+    const text = await response.text();
+    let json: TResponse | null = null;
 
+    if (text.trim()) {
       try {
-        const json = JSON.parse(errorText);
-        const raw = json?.message ?? json?.error ?? errorText;
-        errorMessage = Array.isArray(raw) ? raw.join(", ") : String(raw);
+        json = JSON.parse(text) as TResponse;
       } catch {
-        errorMessage = errorText || errorMessage;
+        // Some upstreams return an HTML challenge page with HTTP 200. Never
+        // surface that page (or its markup) as an error in the storefront.
+        const errorMessage = response.ok
+          ? "The product service returned an invalid response. Please try again later."
+          : `The product service is unavailable (HTTP ${response.status}). Please try again later.`;
+        if (setError) setError(errorMessage);
+        return { success: false, error: errorMessage, data: null };
       }
+    }
 
+    if (!response.ok) {
+      const apiError =
+        json && typeof json === "object"
+          ? (json as { message?: unknown; error?: unknown }).message ??
+            (json as { error?: unknown }).error
+          : undefined;
+      const errorMessage =
+        typeof apiError === "string" && apiError.trim()
+          ? apiError
+          : `The product service is unavailable (HTTP ${response.status}). Please try again later.`;
       if (setError) setError(errorMessage);
       return { success: false, error: errorMessage, data: null };
     }
 
-   // If everything is fine, returns the JSON wrapped in APIResponse
-    // fakestoreapi returns a 200 with an empty body for ids that don't exist,
-    // so an empty response is a valid "no data" result, not a parse failure.
-    const text = await response.text();
-    const json = text ? JSON.parse(text) : null;
-    return { success: true, data: json, error: null };
+    // Treat an empty successful response as null, as some endpoints return an
+    // empty body for a missing item.
+    return { success: true, data: json as TResponse, error: null };
     //Catch Network Errors
   } catch (error: unknown) {
     const errorMessage =
